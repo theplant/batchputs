@@ -1,3 +1,15 @@
+/*
+
+`batchputs.Put` utilize delete and insert sql with multiple values to do updates to database:
+
+```
+DELETE FROM tab WHERE c1 IN ("11", "21", "31"...)
+INSERT INTO tab (c1, c2) VALUES ("11", "12"),("21", "22"),("31", "32"),(...)
+```
+
+With the minimum numbers of sqls (but very large body) sent to database for inserts/deletes, It can achieve great performance.
+
+*/
 package batchputs
 
 import (
@@ -7,6 +19,8 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 )
+
+var Verbose bool
 
 func Put(
 	db sq.BaseRunner,
@@ -37,11 +51,19 @@ func Put(
 		sqb = sqb.PlaceholderFormat(sq.Dollar)
 	}
 
-	batchedRows := splitRowsForMaxCell(rows, 65535)
+	// panic: pq: got 210000 parameters but PostgreSQL only supports 65535 parameters
+	batchedRows, err1 := splitRowsForMaxCell(sqb, db, tableName, rows, 65535)
+	if err1 != nil {
+		err = err1
+		return
+	}
 
 	for _, bRows := range batchedRows {
+		if Verbose {
+			log.Printf("batchputs: in batch size: %#+v\n", len(bRows))
+		}
 		var priVals = primaryValues(pkIndex, bRows)
-		allColumns, allColumnRows, changedPriVals, err1 := changedRows(sqb, db, tableName, columns, rows, primaryKeyColumn, priVals)
+		allColumns, allColumnRows, changedPriVals, err1 := changedRows(sqb, db, tableName, columns, bRows, primaryKeyColumn, priVals)
 		if err1 != nil {
 			err = err1
 			return
@@ -53,8 +75,10 @@ func Put(
 
 		if len(changedPriVals) > 0 {
 			deletes := sqb.Delete(tableName).Where(sq.Eq{primaryKeyColumn: changedPriVals})
-			deletesSQL, deletesArgs, _ := deletes.ToSql()
-			log.Println(deletesSQL, deletesArgs)
+			if Verbose {
+				deletesSQL, deletesArgs, _ := deletes.ToSql()
+				log.Println(deletesSQL, deletesArgs)
+			}
 
 			_, err = deletes.RunWith(db).Exec()
 			if err != nil {
@@ -66,8 +90,10 @@ func Put(
 			inserts = inserts.Values(row...)
 		}
 
-		insertsSQL, insertArgs, _ := inserts.ToSql()
-		log.Println(insertsSQL, insertArgs)
+		if Verbose {
+			insertsSQL, insertArgs, _ := inserts.ToSql()
+			log.Println(insertsSQL, insertArgs)
+		}
 
 		_, err = inserts.RunWith(db).Exec()
 		if err != nil {
@@ -94,8 +120,10 @@ func changedRows(
 	var sRows *sql.Rows
 
 	selects := sqb.Select("*").From(tableName).Where(sq.Eq{primaryKeyColumn: priVals})
-	selectsSQL, selectsArgs, _ := selects.ToSql()
-	log.Println(selectsSQL, selectsArgs)
+	if Verbose {
+		selectsSQL, selectsArgs, _ := selects.ToSql()
+		log.Println(selectsSQL, selectsArgs)
+	}
 
 	sRows, err = selects.RunWith(db).Query()
 	if err != nil {
@@ -226,8 +254,16 @@ func primaryValues(pkIndex int, rows [][]interface{}) (values []interface{}) {
 	return
 }
 
-func splitRowsForMaxCell(rows [][]interface{}, maxCellCount int) (batchedRows [][][]interface{}) {
-	columnsCount := len(rows[0])
+func splitRowsForMaxCell(sqb sq.StatementBuilderType, db sq.BaseRunner, tableName string, rows [][]interface{}, maxCellCount int) (batchedRows [][][]interface{}, err error) {
+	var emptyRows *sql.Rows
+	emptyRows, err = sqb.Select("*").From(tableName).Where(sq.NotEq{"1": "1"}).RunWith(db).Query()
+	defer emptyRows.Close()
+	var fullColumns []string
+	fullColumns, err = emptyRows.Columns()
+	if err != nil {
+		return
+	}
+	columnsCount := len(fullColumns)
 
 	// postgresql max sql parameters count is 65535
 	maxRowCount := maxCellCount / columnsCount

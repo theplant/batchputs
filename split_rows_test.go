@@ -3,6 +3,9 @@ package batchputs
 import (
 	"testing"
 
+	sq "github.com/Masterminds/squirrel"
+	"github.com/jinzhu/gorm"
+
 	"github.com/theplant/testingutils"
 )
 
@@ -80,15 +83,33 @@ var splitCases = []struct {
 	},
 }
 
+type Three struct {
+	C1 int
+	C2 int
+	C3 int
+}
+
 func TestSplitRowsForMaxCell(t *testing.T) {
 
+	d, err := gorm.Open("postgres", "user=inventory password=123 dbname=inventory_test sslmode=disable host=localhost port=5438")
+	d.DropTable(&Three{})
+	d.AutoMigrate(&Three{})
+	d.LogMode(true)
+
+	if err != nil {
+		panic(err)
+	}
+	sqb := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+
 	for _, c := range splitCases {
-		batchRows := splitRowsForMaxCell([][]interface{}{
+		batchRows, err1 := splitRowsForMaxCell(sqb, d.DB(), "threes", [][]interface{}{
 			[]interface{}{11, 12, 13},
 			[]interface{}{21, 22, 23},
 			[]interface{}{31, 32, 33},
 		}, c.maxCell)
-
+		if err1 != nil {
+			panic(err1)
+		}
 		diff := testingutils.PrettyJsonDiff(c.expected, batchRows)
 		if len(diff) > 0 {
 			t.Error(diff)
