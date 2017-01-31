@@ -45,6 +45,18 @@ semaphoreci.com runs this example for inserting 30k records and updates 20k reco
 [![Build Status](https://semaphoreci.com/api/v1/theplant/batchputs/branches/master/badge.svg)](https://semaphoreci.com/theplant/batchputs)
 ```go
 	db := openAndMigrate()
+	// with table
+	// CREATE TABLE countries
+	// (
+	//     code VARCHAR(50) PRIMARY KEY NOT NULL,
+	//     short_name TEXT,
+	//     special_notes TEXT,
+	//     region TEXT,
+	//     income_group TEXT,
+	//     count INTEGER,
+	//     avg_age NUMERIC
+	// );
+	
 	rows := [][]interface{}{}
 	for i := 0; i < 30000; i++ {
 	    rows = append(rows, []interface{}{
