@@ -94,14 +94,18 @@ type Three struct {
 func TestSplitRowsForMaxCell(t *testing.T) {
 
 	d, err := gorm.Open(os.Getenv("DB_DIALECT"), os.Getenv("DB_PARAMS"))
+	if err != nil {
+		panic(err)
+	}
+
 	d.DropTable(&Three{})
 	d.AutoMigrate(&Three{})
 	d.LogMode(true)
 
-	if err != nil {
-		panic(err)
+	sqb := sq.StatementBuilder
+	if os.Getenv("DB_DIALECT") == "postgres" {
+		sqb = sqb.PlaceholderFormat(sq.Dollar)
 	}
-	sqb := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
 	for _, c := range splitCases {
 		batchRows, err1 := splitRowsForMaxCell(sqb, d.DB(), "threes", [][]interface{}{

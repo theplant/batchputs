@@ -1,2 +1,6 @@
 export DB_PARAMS="user=inventory password=123 dbname=inventory_test sslmode=disable host=localhost port=5438"
 export DB_DIALECT=postgres
+
+# export DB_PARAMS="root:@tcp(localhost:3306)/batchputs_test?parseTime=true"
+# export DB_DIALECT=mysql
+

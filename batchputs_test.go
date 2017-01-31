@@ -6,18 +6,20 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jinzhu/gorm"
+	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
+
+	"github.com/jinzhu/gorm"
 	"github.com/theplant/batchputs"
 	"github.com/theplant/testingutils"
 )
 
 type Country struct {
 	Code         string `gorm:"primary_key" sql:"size:50"`
-	ShortName    string
-	SpecialNotes string
-	Region       string
-	IncomeGroup  string
+	ShortName    string `sql:"size:500"`
+	SpecialNotes string `sql:"size:2000"`
+	Region       string `sql:"size:500"`
+	IncomeGroup  string `sql:"size:500"`
 	Count        int
 	AvgAge       float64
 }
@@ -892,7 +894,7 @@ func openAndMigrate() *gorm.DB {
 func TestPut(t *testing.T) {
 	db := openAndMigrate()
 	for _, c := range cases {
-		err := batchputs.Put(db.DB(), "postgres", "countries", "code", c.columns, c.rows)
+		err := batchputs.Put(db.DB(), os.Getenv("DB_DIALECT"), "countries", "code", c.columns, c.rows)
 		if err != nil {
 			panic(err)
 		}

@@ -257,6 +257,9 @@ func primaryValues(pkIndex int, rows [][]interface{}) (values []interface{}) {
 func splitRowsForMaxCell(sqb sq.StatementBuilderType, db sq.BaseRunner, tableName string, rows [][]interface{}, maxCellCount int) (batchedRows [][][]interface{}, err error) {
 	var emptyRows *sql.Rows
 	emptyRows, err = sqb.Select("*").From(tableName).Where(sq.NotEq{"1": "1"}).RunWith(db).Query()
+	if err != nil {
+		return
+	}
 	defer emptyRows.Close()
 	var fullColumns []string
 	fullColumns, err = emptyRows.Columns()

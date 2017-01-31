@@ -66,9 +66,13 @@ semaphoreci.com runs this example for inserting 30k records and updates 20k reco
 	    })
 	}
 	columns := []string{"code", "short_name", "count"}
+	dialect := os.Getenv("DB_DIALECT")
+	if len(dialect) == 0 {
+	    dialect = "postgres"
+	}
 	
 	start := time.Now()
-	err := batchputs.Put(db.DB(), "postgres", "countries", "code", columns, rows)
+	err := batchputs.Put(db.DB(), dialect, "countries", "code", columns, rows)
 	if err != nil {
 	    panic(err)
 	}
@@ -84,7 +88,7 @@ semaphoreci.com runs this example for inserting 30k records and updates 20k reco
 	    })
 	}
 	start = time.Now()
-	err = batchputs.Put(db.DB(), "postgres", "countries", "code", columns, rows)
+	err = batchputs.Put(db.DB(), dialect, "countries", "code", columns, rows)
 	if err != nil {
 	    panic(err)
 	}
