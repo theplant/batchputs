@@ -2,6 +2,7 @@ package batchputs_test
 
 import (
 	"encoding/csv"
+	"os"
 	"strings"
 	"testing"
 
@@ -877,7 +878,7 @@ func toArray(data string) (r [][]interface{}) {
 }
 
 func openAndMigrate() *gorm.DB {
-	d, err := gorm.Open("postgres", "user=inventory password=123 dbname=inventory_test sslmode=disable host=localhost port=5438")
+	d, err := gorm.Open(os.Getenv("DB_DIALECT"), os.Getenv("DB_PARAMS"))
 	d.DropTable(&Country{})
 	d.AutoMigrate(&Country{})
 	d.LogMode(true)

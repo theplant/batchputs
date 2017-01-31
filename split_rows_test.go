@@ -6,6 +6,8 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jinzhu/gorm"
 
+	"os"
+
 	"github.com/theplant/testingutils"
 )
 
@@ -91,7 +93,7 @@ type Three struct {
 
 func TestSplitRowsForMaxCell(t *testing.T) {
 
-	d, err := gorm.Open("postgres", "user=inventory password=123 dbname=inventory_test sslmode=disable host=localhost port=5438")
+	d, err := gorm.Open(os.Getenv("DB_DIALECT"), os.Getenv("DB_PARAMS"))
 	d.DropTable(&Three{})
 	d.AutoMigrate(&Three{})
 	d.LogMode(true)
