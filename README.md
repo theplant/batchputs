@@ -34,6 +34,15 @@ func Put(
 ```
 
 With this example, We created 30k records with 3 columns each, and inserts it into database in batch. and then we updates 20k records.
+
+semaphoreci.com runs this example for inserting 30k records and updates 20k records totally less than 2 seconds.
+
+```
+=== RUN   ExamplePut_perf
+--- PASS: ExamplePut_perf (1.73s)
+```
+
+[![Build Status](https://semaphoreci.com/api/v1/theplant/batchputs/branches/master/badge.svg)](https://semaphoreci.com/theplant/batchputs)
 ```go
 	db := openAndMigrate()
 	rows := [][]interface{}{}
