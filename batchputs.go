@@ -22,6 +22,8 @@ import (
 
 var Verbose bool
 
+type RowWillChange func(row []interface{}, columns []string)
+
 func Put(
 	db sq.BaseRunner,
 	driverName string,
@@ -29,6 +31,27 @@ func Put(
 	primaryKeyColumn string,
 	columns []string,
 	rows [][]interface{}) (err error) {
+	err = CollectChangePut(
+		db,
+		driverName,
+		tableName,
+		primaryKeyColumn,
+		columns,
+		rows,
+		nil,
+	)
+	return
+}
+
+func CollectChangePut(
+	db sq.BaseRunner,
+	driverName string,
+	tableName string,
+	primaryKeyColumn string,
+	columns []string,
+	rows [][]interface{},
+	rowWillChange RowWillChange,
+) (err error) {
 
 	if len(rows) == 0 {
 		return
@@ -87,6 +110,9 @@ func Put(
 		}
 		inserts := sqb.Insert(tableName).Columns(allColumns...)
 		for _, row := range allColumnRows {
+			if rowWillChange != nil {
+				rowWillChange(row, allColumns)
+			}
 			inserts = inserts.Values(row...)
 		}
 

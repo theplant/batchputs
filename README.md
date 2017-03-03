@@ -13,12 +13,28 @@ With the minimum numbers of sqls (but very large body) sent to database for inse
 
 
 * [Variables](#variables)
+* [Collect Change Put](#collect-change-put)
 * [Put](#put)
+* [Type Row Will Change](#type-row-will-change)
 
 
 ## Variables
 ``` go
 var Verbose bool
+```
+
+
+## Collect Change Put
+``` go
+func CollectChangePut(
+    db sq.BaseRunner,
+    driverName string,
+    tableName string,
+    primaryKeyColumn string,
+    columns []string,
+    rows [][]interface{},
+    rowWillChange RowWillChange,
+) (err error)
 ```
 
 
@@ -99,6 +115,19 @@ semaphoreci.com runs this example for inserting 30k records and updates 20k reco
 	// Inserts 30000 records using less than 3 seconds: true
 	// Updates 20000 records using less than 3 seconds: true
 ```
+
+
+
+## Type: Row Will Change
+``` go
+type RowWillChange func(row []interface{}, columns []string)
+```
+
+
+
+
+
+
 
 
 
