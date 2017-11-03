@@ -52,6 +52,28 @@ func CollectChangePut(
 	rows [][]interface{},
 	rowWillChange RowWillChange,
 ) (err error) {
+	return CollectChangePutWithMaxSQLParamsCount(
+		db,
+		driverName,
+		tableName,
+		primaryKeyColumn,
+		columns,
+		rows,
+		rowWillChange,
+		65535,
+	)
+}
+
+func CollectChangePutWithMaxSQLParamsCount(
+	db sq.BaseRunner,
+	driverName string,
+	tableName string,
+	primaryKeyColumn string,
+	columns []string,
+	rows [][]interface{},
+	rowWillChange RowWillChange,
+	maxSQLParamsCount int,
+) (err error) {
 
 	if len(rows) == 0 {
 		return
@@ -73,9 +95,12 @@ func CollectChangePut(
 	if driverName == "postgres" {
 		sqb = sqb.PlaceholderFormat(sq.Dollar)
 	}
-
+	max := maxSQLParamsCount
+	if max == 0 {
+		max = 65536
+	}
 	// panic: pq: got 210000 parameters but PostgreSQL only supports 65535 parameters
-	batchedRows, err1 := splitRowsForMaxCell(sqb, db, tableName, rows, 65535)
+	batchedRows, err1 := splitRowsForMaxCell(sqb, db, tableName, rows, max)
 	if err1 != nil {
 		err = err1
 		return
@@ -83,7 +108,7 @@ func CollectChangePut(
 
 	for _, bRows := range batchedRows {
 		if Verbose {
-			log.Printf("batchputs: in batch size: %#+v\n", len(bRows))
+			log.Printf("batchputs: in batch size: %#+v, max_sql_params_count: %d\n", len(bRows), max)
 		}
 		var priVals = primaryValues(pkIndex, bRows)
 		allColumns, allColumnRows, changedPriVals, err1 := changedRows(sqb, db, tableName, columns, bRows, primaryKeyColumn, priVals)
