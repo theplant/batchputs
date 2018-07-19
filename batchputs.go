@@ -21,6 +21,7 @@ import (
 )
 
 var Verbose bool
+var MaxSQLParamsCount = 63435
 
 type RowWillChange func(row []interface{}, columns []string)
 
@@ -60,7 +61,7 @@ func CollectChangePut(
 		columns,
 		rows,
 		rowWillChange,
-		65535,
+		MaxSQLParamsCount,
 	)
 }
 
@@ -97,7 +98,7 @@ func CollectChangePutWithMaxSQLParamsCount(
 	}
 	max := maxSQLParamsCount
 	if max == 0 {
-		max = 65536
+		max = MaxSQLParamsCount
 	}
 	// panic: pq: got 210000 parameters but PostgreSQL only supports 65535 parameters
 	batchedRows, err1 := splitRowsForMaxCell(sqb, db, tableName, rows, max)
